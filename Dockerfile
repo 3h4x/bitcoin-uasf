@@ -10,14 +10,14 @@ RUN wget https://uasf.bitcoinreminder.com/$BITCOIN_UASF_VERSION-x86_64-linux-gnu
 RUN tar xf $BITCOIN_UASF_VERSION-x86_64-linux-gnu.tar.gz
 
 ADD bitcoin.conf /home/uasf/.bitcoin/bitcoin.conf
-
+RUN mkdir -p /home/uasf/.bitcoin/blocks
 RUN chown uasf /home/uasf/.bitcoin -Rc
 
 USER uasf
 WORKDIR /home/uasf
 
-RUN sed -i.bak -e "s/PASSWORD/$(uuidgen | sed 's/\-//g')/" -e "s/USERNAME/$(uuidgen | sed 's/-//g')/" /home/uasf/.bitcoin/bitcoin.conf
+ADD run.sh /run.sh
 
+VOLUME ['/home/uasf/.bitcoin/blocks']
 EXPOSE 8333
-
-CMD $BITCOIN_DIR/bin/bitcoind && tail -F ~/.bitcoin/debug.log
+CMD bash /run.sh
