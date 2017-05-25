@@ -1,0 +1,845 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: >-
+  Bitcoin Full Node UASF
+
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instances
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+
+  SSHLocation:
+    Description: >-
+      Lockdown SSH access to the bastion host (default can be accessed from anywhere)
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid CIDR range of the form x.x.x.x/x.
+
+  AvailibilityZone:
+    Description: Availibility Zone - pick one!
+    Type: 'AWS::EC2::AvailabilityZone::Name'
+
+  ServerInstanceType:
+    Description: Server EC2 instance type
+    Type: String
+    Default: t2.nano
+    AllowedValues:
+      - t1.micro
+      - t2.nano
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t2.large
+      - m1.small
+      - m1.medium
+      - m1.large
+      - m1.xlarge
+      - m2.xlarge
+      - m2.2xlarge
+      - m2.4xlarge
+      - m3.medium
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - c1.medium
+      - c1.xlarge
+      - c3.large
+      - c3.xlarge
+      - c3.2xlarge
+      - c3.4xlarge
+      - c3.8xlarge
+      - c4.large
+      - c4.xlarge
+      - c4.2xlarge
+      - c4.4xlarge
+      - c4.8xlarge
+      - g2.2xlarge
+      - g2.8xlarge
+      - r3.large
+      - r3.xlarge
+      - r3.2xlarge
+      - r3.4xlarge
+      - r3.8xlarge
+      - i2.xlarge
+      - i2.2xlarge
+      - i2.4xlarge
+      - i2.8xlarge
+      - d2.xlarge
+      - d2.2xlarge
+      - d2.4xlarge
+      - d2.8xlarge
+      - hi1.4xlarge
+      - hs1.8xlarge
+      - cr1.8xlarge
+      - cc2.8xlarge
+      - cg1.4xlarge
+    ConstraintDescription: must be a valid EC2 instance type.
+  WebServerCount:
+    Description: Number of EC2 instances to launch for the WebServer server
+    Type: Number
+    Default: '1'
+Mappings:
+  SubnetConfig:
+    VPC:
+      CIDR: 10.0.0.0/16
+    Public:
+      CIDR: 10.0.0.0/24
+
+  AWSInstanceType2Arch:
+    t1.micro:
+      Arch: PV64
+    t2.nano:
+      Arch: HVM64
+    t2.micro:
+      Arch: HVM64
+    t2.small:
+      Arch: HVM64
+    t2.medium:
+      Arch: HVM64
+    t2.large:
+      Arch: HVM64
+    m1.small:
+      Arch: PV64
+    m1.medium:
+      Arch: PV64
+    m1.large:
+      Arch: PV64
+    m1.xlarge:
+      Arch: PV64
+    m2.xlarge:
+      Arch: PV64
+    m2.2xlarge:
+      Arch: PV64
+    m2.4xlarge:
+      Arch: PV64
+    m3.medium:
+      Arch: HVM64
+    m3.large:
+      Arch: HVM64
+    m3.xlarge:
+      Arch: HVM64
+    m3.2xlarge:
+      Arch: HVM64
+    m4.large:
+      Arch: HVM64
+    m4.xlarge:
+      Arch: HVM64
+    m4.2xlarge:
+      Arch: HVM64
+    m4.4xlarge:
+      Arch: HVM64
+    m4.10xlarge:
+      Arch: HVM64
+    c1.medium:
+      Arch: PV64
+    c1.xlarge:
+      Arch: PV64
+    c3.large:
+      Arch: HVM64
+    c3.xlarge:
+      Arch: HVM64
+    c3.2xlarge:
+      Arch: HVM64
+    c3.4xlarge:
+      Arch: HVM64
+    c3.8xlarge:
+      Arch: HVM64
+    c4.large:
+      Arch: HVM64
+    c4.xlarge:
+      Arch: HVM64
+    c4.2xlarge:
+      Arch: HVM64
+    c4.4xlarge:
+      Arch: HVM64
+    c4.8xlarge:
+      Arch: HVM64
+    g2.2xlarge:
+      Arch: HVMG2
+    g2.8xlarge:
+      Arch: HVMG2
+    r3.large:
+      Arch: HVM64
+    r3.xlarge:
+      Arch: HVM64
+    r3.2xlarge:
+      Arch: HVM64
+    r3.4xlarge:
+      Arch: HVM64
+    r3.8xlarge:
+      Arch: HVM64
+    i2.xlarge:
+      Arch: HVM64
+    i2.2xlarge:
+      Arch: HVM64
+    i2.4xlarge:
+      Arch: HVM64
+    i2.8xlarge:
+      Arch: HVM64
+    d2.xlarge:
+      Arch: HVM64
+    d2.2xlarge:
+      Arch: HVM64
+    d2.4xlarge:
+      Arch: HVM64
+    d2.8xlarge:
+      Arch: HVM64
+    hi1.4xlarge:
+      Arch: HVM64
+    hs1.8xlarge:
+      Arch: HVM64
+    cr1.8xlarge:
+      Arch: HVM64
+    cc2.8xlarge:
+      Arch: HVM64
+  AWSInstanceType2NATArch:
+    t1.micro:
+      Arch: NATPV64
+    t2.nano:
+      Arch: NATHVM64
+    t2.micro:
+      Arch: NATHVM64
+    t2.small:
+      Arch: NATHVM64
+    t2.medium:
+      Arch: NATHVM64
+    t2.large:
+      Arch: NATHVM64
+    m1.small:
+      Arch: NATPV64
+    m1.medium:
+      Arch: NATPV64
+    m1.large:
+      Arch: NATPV64
+    m1.xlarge:
+      Arch: NATPV64
+    m2.xlarge:
+      Arch: NATPV64
+    m2.2xlarge:
+      Arch: NATPV64
+    m2.4xlarge:
+      Arch: NATPV64
+    m3.medium:
+      Arch: NATHVM64
+    m3.large:
+      Arch: NATHVM64
+    m3.xlarge:
+      Arch: NATHVM64
+    m3.2xlarge:
+      Arch: NATHVM64
+    m4.large:
+      Arch: NATHVM64
+    m4.xlarge:
+      Arch: NATHVM64
+    m4.2xlarge:
+      Arch: NATHVM64
+    m4.4xlarge:
+      Arch: NATHVM64
+    m4.10xlarge:
+      Arch: NATHVM64
+    c1.medium:
+      Arch: NATPV64
+    c1.xlarge:
+      Arch: NATPV64
+    c3.large:
+      Arch: NATHVM64
+    c3.xlarge:
+      Arch: NATHVM64
+    c3.2xlarge:
+      Arch: NATHVM64
+    c3.4xlarge:
+      Arch: NATHVM64
+    c3.8xlarge:
+      Arch: NATHVM64
+    c4.large:
+      Arch: NATHVM64
+    c4.xlarge:
+      Arch: NATHVM64
+    c4.2xlarge:
+      Arch: NATHVM64
+    c4.4xlarge:
+      Arch: NATHVM64
+    c4.8xlarge:
+      Arch: NATHVM64
+    g2.2xlarge:
+      Arch: NATHVMG2
+    g2.8xlarge:
+      Arch: NATHVMG2
+    r3.large:
+      Arch: NATHVM64
+    r3.xlarge:
+      Arch: NATHVM64
+    r3.2xlarge:
+      Arch: NATHVM64
+    r3.4xlarge:
+      Arch: NATHVM64
+    r3.8xlarge:
+      Arch: NATHVM64
+    i2.xlarge:
+      Arch: NATHVM64
+    i2.2xlarge:
+      Arch: NATHVM64
+    i2.4xlarge:
+      Arch: NATHVM64
+    i2.8xlarge:
+      Arch: NATHVM64
+    d2.xlarge:
+      Arch: NATHVM64
+    d2.2xlarge:
+      Arch: NATHVM64
+    d2.4xlarge:
+      Arch: NATHVM64
+    d2.8xlarge:
+      Arch: NATHVM64
+    hi1.4xlarge:
+      Arch: NATHVM64
+    hs1.8xlarge:
+      Arch: NATHVM64
+    cr1.8xlarge:
+      Arch: NATHVM64
+    cc2.8xlarge:
+      Arch: NATHVM64
+  AWSRegionArch2AMI:
+    us-east-1:
+      PV64: ami-2a69aa47
+      HVM64: ami-6869aa05
+      HVMG2: ami-61e27177
+    us-west-2:
+      PV64: ami-7f77b31f
+      HVM64: ami-7172b611
+      HVMG2: ami-60aa3700
+    us-west-1:
+      PV64: ami-a2490dc2
+      HVM64: ami-31490d51
+      HVMG2: ami-4b694d2b
+    eu-west-1:
+      PV64: ami-4cdd453f
+      HVM64: ami-f9dd458a
+      HVMG2: ami-2955524f
+    eu-west-2:
+      PV64: NOT_SUPPORTED
+      HVM64: ami-886369ec
+      HVMG2: NOT_SUPPORTED
+    eu-central-1:
+      PV64: ami-6527cf0a
+      HVM64: ami-ea26ce85
+      HVMG2: ami-81ac71ee
+    ap-northeast-1:
+      PV64: ami-3e42b65f
+      HVM64: ami-374db956
+      HVMG2: ami-46220c21
+    ap-northeast-2:
+      PV64: NOT_SUPPORTED
+      HVM64: ami-2b408b45
+      HVMG2: NOT_SUPPORTED
+    ap-southeast-1:
+      PV64: ami-df9e4cbc
+      HVM64: ami-a59b49c6
+      HVMG2: ami-c212aba1
+    ap-southeast-2:
+      PV64: ami-63351d00
+      HVM64: ami-dc361ebf
+      HVMG2: ami-0ad2db69
+    ap-south-1:
+      PV64: NOT_SUPPORTED
+      HVM64: ami-ffbdd790
+      HVMG2: ami-ca3042a5
+    us-east-2:
+      PV64: NOT_SUPPORTED
+      HVM64: ami-f6035893
+      HVMG2: NOT_SUPPORTED
+    ca-central-1:
+      PV64: NOT_SUPPORTED
+      HVM64: ami-730ebd17
+      HVMG2: NOT_SUPPORTED
+    sa-east-1:
+      PV64: ami-1ad34676
+      HVM64: ami-6dd04501
+      HVMG2: NOT_SUPPORTED
+    cn-north-1:
+      PV64: ami-77559f1a
+      HVM64: ami-8e6aa0e3
+      HVMG2: NOT_SUPPORTED
+Resources:
+  VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !FindInMap
+        - SubnetConfig
+        - VPC
+        - CIDR
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: Name
+          Value: bitcoin-uasf
+        - Key: Network
+          Value: Public
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 58595b59-ac2e-468d-8cb4-b1db14a45dde
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: Name
+          Value: bitcoin-uasf
+        - Key: Network
+          Value: Public
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: ba22a252-da34-465e-a2c3-48cd5a25cc0e
+  GatewayToInternet:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 67f5f504-0a13-4a6b-b79a-ea0b8ee7ab4a
+
+  PublicRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: Name
+          Value: bitcoin-uasf
+        - Key: Network
+          Value: Public
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: cab2dda2-f2cd-4a7e-b695-b1a472d2fa45
+
+  PublicRoute:
+    Type: 'AWS::EC2::Route'
+    DependsOn: GatewayToInternet
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 420cf3bd-9622-451f-b39e-b817d80e92da
+  PublicSubnetRouteTableAssociation1:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 985b081f-3fbe-457b-9626-784cabee2566
+
+  PublicNetworkAcl:
+    Type: 'AWS::EC2::NetworkAcl'
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: Name
+          Value: bitcoin-uasf
+        - Key: Network
+          Value: Public
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 9c534825-dab3-4ef9-a0de-bd15183ce47c
+  InboundHTTPPublicNetworkAclEntry:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      NetworkAclId: !Ref PublicNetworkAcl
+      RuleNumber: '100'
+      Protocol: '6'
+      RuleAction: allow
+      Egress: 'false'
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: '8333'
+        To: '8333'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: ff5eef22-d009-46fc-822e-9df44821e7dd
+  InboundDynamicPortPublicNetworkAclEntry:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      NetworkAclId: !Ref PublicNetworkAcl
+      RuleNumber: '101'
+      Protocol: '6'
+      RuleAction: allow
+      Egress: 'false'
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: '1024'
+        To: '65535'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 27d76a0b-2bad-487c-b559-173c41763a9d
+  InboundSSHPublicNetworkAclEntry:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      NetworkAclId: !Ref PublicNetworkAcl
+      RuleNumber: '102'
+      Protocol: '6'
+      RuleAction: allow
+      Egress: 'false'
+      CidrBlock: !Ref SSHLocation
+      PortRange:
+        From: '22'
+        To: '22'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 0ce43981-e210-4981-b00f-f78ff1f793c7
+  OutboundPublicNetworkAclEntry:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      NetworkAclId: !Ref PublicNetworkAcl
+      RuleNumber: '100'
+      Protocol: '6'
+      RuleAction: allow
+      Egress: 'true'
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: '0'
+        To: '65535'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: d3c4292d-33d2-41e1-a259-9626cb4e914d
+  PublicSubnetNetworkAclAssociation1:
+    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      NetworkAclId: !Ref PublicNetworkAcl
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 724fc2be-e4aa-4c25-89a8-29fc12272f30
+
+  ServerFleet:
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    DependsOn:
+      - PublicRoute
+    Properties:
+      VPCZoneIdentifier:
+        - !Ref PublicSubnet
+      LaunchConfigurationName: !Ref ServerLaunchConfig
+      MinSize: '1'
+      MaxSize: '100'
+      DesiredCapacity: !Ref WebServerCount
+      Tags:
+        - Key: Name
+          Value: bitcoin-uasf
+          PropagateAtLaunch: 'true'
+        - Key: Network
+          Value: Public
+          PropagateAtLaunch: 'true'
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT45M
+        Count: !Ref WebServerCount
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: '1'
+        MaxBatchSize: '1'
+        PauseTime: PT15M
+        WaitOnResourceSignals: 'true'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 9ff81f5a-6462-4202-9d33-3c16830faba4
+
+  ServerLaunchConfig:
+    Type: 'AWS::AutoScaling::LaunchConfiguration'
+    Metadata:
+      'AWS::CloudFormation::Init':
+        config:
+          packages:
+            yum:
+              docker: []
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Join
+                - ''
+                - - |
+                    [cfn-auto-reloader-hook]
+                  - |
+                    triggers=post.update
+                  - >
+                    path=Resources.ServerLaunchConfig.Metadata.AWS::CloudFormation::Init
+                  - 'action=/opt/aws/bin/cfn-init -v '
+                  - '         --stack '
+                  - !Ref 'AWS::StackName'
+                  - '         --resource ServerLaunchConfig '
+                  - '         --region '
+                  - !Ref 'AWS::Region'
+                  - |+
+
+                  - |
+                    runas=root
+          services:
+            sysvinit:
+              docker:
+                enabled: 'true'
+                ensureRunning: 'true'
+              cfn-hup:
+                enabled: 'true'
+                ensureRunning: 'true'
+                files:
+                  - /etc/cfn/cfn-hup.conf
+                  - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+      'AWS::CloudFormation::Designer':
+        id: 9b6672b4-1966-4255-a706-9a6dfa9392aa
+    Properties:
+      ImageId: !FindInMap
+        - AWSRegionArch2AMI
+        - !Ref 'AWS::Region'
+        - !FindInMap
+          - AWSInstanceType2Arch
+          - !Ref ServerInstanceType
+          - Arch
+      SecurityGroups:
+        - !Ref ServerSecurityGroup
+      InstanceType: !Ref ServerInstanceType
+      KeyName: !Ref KeyName
+      BlockDeviceMappings:
+        -
+          DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 200
+      AssociatePublicIpAddress: 'true'
+      UserData:
+        Fn::Base64:
+          Fn::Sub:
+            - |
+              #!/bin/bash -xe
+              yum update -y aws-cfn-bootstrap
+              # Install the sample application
+              /opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource ServerLaunchConfig --region ${AWS::Region}
+              # Signal copletion
+              /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource ServerFleet --region ${AWS::Region}
+              docker run -d -p 8333:8333 --restart always 3h4x/bitcoin-uasf
+            - {}
+
+  ServerSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: >-
+        Allow access from load balancer and bastion as well as outbound HTTP and
+        HTTPS traffic
+      Tags:
+        - Key: Name
+          Value: bitcoin-uasf
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '8333'
+          ToPort: '8333'
+          CidrIp: '0.0.0.0/0'
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: !Ref SSHLocation
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: ac484734-b4c4-486b-9802-bc36fca87f53
+
+  PublicSubnet:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !FindInMap
+        - SubnetConfig
+        - Public
+        - CIDR
+      AvailabilityZone: !Ref AvailibilityZone
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: Name
+          Value: bitcoin-uasf
+        - Key: Network
+          Value: Public
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: b0a55887-e6a2-41cd-925d-fb812eb5059c
+
+Metadata:
+  'AWS::CloudFormation::Designer':
+    ba22a252-da34-465e-a2c3-48cd5a25cc0e:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 60
+        'y': 840
+      z: 1
+      embeds: []
+    58595b59-ac2e-468d-8cb4-b1db14a45dde:
+      size:
+        width: 780
+        height: 690
+      position:
+        x: 60
+        'y': 90
+      z: 1
+      embeds:
+        - b0a55887-e6a2-41cd-925d-fb812eb5059c
+        - ac484734-b4c4-486b-9802-bc36fca87f53
+        - 9c534825-dab3-4ef9-a0de-bd15183ce47c
+        - cab2dda2-f2cd-4a7e-b695-b1a472d2fa45
+    ac484734-b4c4-486b-9802-bc36fca87f53:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 300
+        'y': 540
+      z: 2
+      parent: 58595b59-ac2e-468d-8cb4-b1db14a45dde
+      embeds: []
+      isrelatedto:
+        - 604a1567-941c-4906-8313-eacdccf14265
+    9b6672b4-1966-4255-a706-9a6dfa9392aa:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 180
+        'y': 840
+      z: 1
+      embeds: []
+      ismemberof:
+        - ac484734-b4c4-486b-9802-bc36fca87f53
+    9c534825-dab3-4ef9-a0de-bd15183ce47c:
+      size:
+        width: 330
+        height: 330
+      position:
+        x: 90
+        'y': 150
+      z: 2
+      parent: 58595b59-ac2e-468d-8cb4-b1db14a45dde
+      embeds:
+        - d3c4292d-33d2-41e1-a259-9626cb4e914d
+        - 0ce43981-e210-4981-b00f-f78ff1f793c7
+        - 27d76a0b-2bad-487c-b559-173c41763a9d
+        - ff5eef22-d009-46fc-822e-9df44821e7dd
+    d3c4292d-33d2-41e1-a259-9626cb4e914d:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 120
+        'y': 210
+      z: 3
+      parent: 9c534825-dab3-4ef9-a0de-bd15183ce47c
+      embeds: []
+    0ce43981-e210-4981-b00f-f78ff1f793c7:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 240
+        'y': 210
+      z: 3
+      parent: 9c534825-dab3-4ef9-a0de-bd15183ce47c
+      embeds: []
+    27d76a0b-2bad-487c-b559-173c41763a9d:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 120
+        'y': 330
+      z: 3
+      parent: 9c534825-dab3-4ef9-a0de-bd15183ce47c
+      embeds: []
+    ff5eef22-d009-46fc-822e-9df44821e7dd:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 240
+        'y': 330
+      z: 3
+      parent: 9c534825-dab3-4ef9-a0de-bd15183ce47c
+      embeds: []
+    cab2dda2-f2cd-4a7e-b695-b1a472d2fa45:
+      size:
+        width: 240
+        height: 240
+      position:
+        x: 480
+        'y': 150
+      z: 2
+      parent: 58595b59-ac2e-468d-8cb4-b1db14a45dde
+      embeds:
+        - 420cf3bd-9622-451f-b39e-b817d80e92da
+    67f5f504-0a13-4a6b-b79a-ea0b8ee7ab4a:
+      source:
+        id: ba22a252-da34-465e-a2c3-48cd5a25cc0e
+      target:
+        id: 58595b59-ac2e-468d-8cb4-b1db14a45dde
+      z: 1
+    420cf3bd-9622-451f-b39e-b817d80e92da:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 510
+        'y': 210
+      z: 3
+      parent: cab2dda2-f2cd-4a7e-b695-b1a472d2fa45
+      embeds: []
+      references:
+        - ba22a252-da34-465e-a2c3-48cd5a25cc0e
+      dependson:
+        - 67f5f504-0a13-4a6b-b79a-ea0b8ee7ab4a
+    b0a55887-e6a2-41cd-925d-fb812eb5059c:
+      size:
+        width: 150
+        height: 150
+      position:
+        x: 480
+        'y': 450
+      z: 2
+      parent: 58595b59-ac2e-468d-8cb4-b1db14a45dde
+      embeds: []
+    9ff81f5a-6462-4202-9d33-3c16830faba4:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 420
+        'y': 840
+      z: 1
+      embeds: []
+      isconnectedto:
+        - b0a55887-e6a2-41cd-925d-fb812eb5059c
+      isassociatedwith:
+        - 9b6672b4-1966-4255-a706-9a6dfa9392aa
+      dependson:
+        - 420cf3bd-9622-451f-b39e-b817d80e92da
+    724fc2be-e4aa-4c25-89a8-29fc12272f30:
+      source:
+        id: 9c534825-dab3-4ef9-a0de-bd15183ce47c
+      target:
+        id: b0a55887-e6a2-41cd-925d-fb812eb5059c
+      z: 2
+    985b081f-3fbe-457b-9626-784cabee2566:
+      source:
+        id: cab2dda2-f2cd-4a7e-b695-b1a472d2fa45
+      target:
+        id: b0a55887-e6a2-41cd-925d-fb812eb5059c
+      z: 2
