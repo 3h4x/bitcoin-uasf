@@ -622,7 +622,7 @@ Resources:
         Fn::Base64:
           Fn::Sub:
             - |
-              #!/bin/bash -xe
+              #!/bin/bash -x
               yum update -y aws-cfn-bootstrap
               # Install the sample application
               /opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource ServerLaunchConfig --region ${AWS::Region}
