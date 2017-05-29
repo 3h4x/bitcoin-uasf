@@ -12,4 +12,4 @@ If you want to build it yourself
 
 ## Cloudformation
 
-![Launch Stack](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=bitcoin-uasf&templateURL=https://raw.githubusercontent.com/3h4x/bitcoin-uasf/master/uasf.yaml)
+[![Launch Bitcoin Full Node with UASF](http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/images/cloudformation-launch-stack-button.png)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=bitcoin-uasf&templateURL=https://raw.githubusercontent.com/3h4x/bitcoin-uasf/master/uasf.yaml)
