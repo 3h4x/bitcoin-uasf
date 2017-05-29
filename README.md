@@ -12,4 +12,9 @@ If you want to build it yourself
 
 ## Cloudformation
 
-[![Launch Bitcoin Full Node with UASF](http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/images/cloudformation-launch-stack-button.png)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=bitcoin-uasf&templateURL=https://raw.githubusercontent.com/3h4x/bitcoin-uasf/master/uasf.yaml)
+Cloudformation is AWS service to provision infrastructure there.  
+Before you lunch it there you should know that:  
+- "Full nodes are only meaningful if you run them on hardware you exclusively control." - luke-jr
+- There is possibilty of attacking the network with a <a href="https://en.wikipedia.org/wiki/Sybil_attack" target="_blank" title="Sybil Attack">Sybil attack</a>
+
+[![Launch Bitcoin Full Node with UASF](http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/images/cloudformation-launch-stack-button.png)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=bitcoin-uasf&templateURL=https://s3.amazonaws.com/bitcoin-uasf/uasf.yaml)
