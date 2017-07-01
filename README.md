@@ -14,8 +14,8 @@ If you want to build it yourself
 
 ## Cloudformation
 
-Cloudformation is AWS service to provision infrastructure there.  
-Before you lunch it there you should know that:  
+Cloudformation is AWS service to provision infrastructure.  
+Before you lunch bitcoin node in cloud you should know that:  
 - "Full nodes are only meaningful if you run them on hardware you exclusively control." - luke-jr
 - There is possibilty of attacking the network with a <a href="https://en.wikipedia.org/wiki/Sybil_attack" target="_blank" title="Sybil Attack">Sybil attack</a>
 
