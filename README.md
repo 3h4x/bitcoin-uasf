@@ -1,4 +1,5 @@
-# Bitcoin Core User Activated Soft Fork UASF
+# Bitcoin 0.14.2 BIP148 UASF 0.3
+# Full Node with Core User Activated Soft Fork
 ## Running docker image
 
 Version bitcoin-0.14.2-bip148_segwit0.3
