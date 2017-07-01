@@ -1,10 +1,12 @@
-# bitcoin-uasf
+# Bitcoin Core User Activated Soft Fork UASF
 ## Running docker image
 
-Version bitcoin-0.14.1-bip148_segwit0.3
+Version bitcoin-0.14.2-bip148_segwit0.3
 
 Running node is as simple as running  
 `docker run -d -v $PWD/data:/home/uasf/.bitcoin/blocks -p 8333:8333 3h4x/bitcoin-uasf`
+
+Important thing to preserve data is mounting a volume (-v) to docker image.
 
 If you want to build it yourself  
 `docker build -t bitcoin-uasf .`  
