@@ -3,6 +3,7 @@
 ## Running docker image
 
 Version bitcoin-0.14.2-bip148_segwit0.3
+All images are automatically built on Docker Hub https://hub.docker.com/r/3h4x/bitcoin-uasf/
 
 ### Run docker and preserve data . 
 Use docker volumes!  
