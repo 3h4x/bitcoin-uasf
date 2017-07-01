@@ -1,15 +1,20 @@
-# Bitcoin 0.14.2 BIP148 UASF 0.3
+# Bitcoin UASF 0.3 0.14.2 BIP148 
 # Full Node with Core User Activated Soft Fork
 ## Running docker image
 
 Version bitcoin-0.14.2-bip148_segwit0.3
 
-Running node is as simple as running  
-`docker run -d -v $PWD/data:/home/uasf/.bitcoin/blocks -p 8333:8333 3h4x/bitcoin-uasf`
+### Run docker and preserve data . 
+Use docker volumes!  
 
-Important thing to preserve data is mounting a volume (-v) to docker image.
+`docker run -d -v /path/to/.bitcoin:/home/uasf/.bitcoin/ -p 8333:8333 3h4x/bitcoin-uasf`
 
-If you want to build it yourself  
+### Simple run
+`docker run -d -p 8333:8333 3h4x/bitcoin-uasf`
+
+Important: This will not preserve data if the container will be killed or stopped. 
+
+### If you want to build container yourself
 `docker build -t bitcoin-uasf .`  
 `docker run -d -v $PWD/data:/home/uasf/.bitcoin/blocks -p 8333:8333 bitcoin-uasf`
 
@@ -21,3 +26,5 @@ Before you lunch bitcoin node in cloud you should know that:
 - There is possibilty of attacking the network with a <a href="https://en.wikipedia.org/wiki/Sybil_attack" target="_blank" title="Sybil Attack">Sybil attack</a>
 
 [![Launch Bitcoin Full Node with UASF](http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/images/cloudformation-launch-stack-button.png)](https://console.aws.amazon.com/cloudformation/home#/stacks/new?stackName=bitcoin-uasf&templateURL=https://s3.amazonaws.com/bitcoin-uasf/uasf.yaml)
+
+
